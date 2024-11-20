@@ -2,8 +2,9 @@ package com.dating.authentication.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -23,6 +24,7 @@ public class UserCredentialsModel {
     @Column(name = "user_password", nullable = false)
     private String userPassword;
 
-    @Column(name = "registration_time")
-    private Date registrationTime;
+    @CreationTimestamp
+    @Column(name = "registration_time", updatable = false)
+    private LocalDateTime registrationTime;
 }
