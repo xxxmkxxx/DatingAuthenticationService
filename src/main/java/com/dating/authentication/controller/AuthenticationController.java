@@ -1,11 +1,12 @@
 package com.dating.authentication.controller;
 
-import com.dating.authentication.common.MessageTitles;
-import com.dating.authentication.data.MessageResponseData;
+import com.dating.authentication.data.ResponseData;
 import com.dating.authentication.data.UserRegistrationCredentialsData;
 import com.dating.authentication.data.UserSingInCredentialsData;
 import com.dating.authentication.service.CredentialsService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,7 +16,7 @@ public class AuthenticationController {
     private CredentialsService credentialsService;
 
     @PostMapping("/login")
-    public MessageResponseData login(@RequestBody UserSingInCredentialsData data) {
+    public ResponseEntity<ResponseData<Object>> login(@RequestBody UserSingInCredentialsData data) {
         boolean isCredentialsExists;
         boolean isMail = false;
 
@@ -27,28 +28,44 @@ public class AuthenticationController {
         }
 
         if (!isCredentialsExists) {
-            return new MessageResponseData(MessageTitles.ERROR.name(), "There is no user with this login!");
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(
+                            new ResponseData<>(false, "There is no user with this login!", null)
+                    );
         }
 
         if (!credentialsService.validateCredentials(data.getLogin(), data.getPassword(), isMail)) {
-            return new MessageResponseData(MessageTitles.ERROR.name(), "User data not matches!");
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(
+                            new ResponseData<>(false, "User data not matches!", null)
+                    );
         }
 
-        return new MessageResponseData(MessageTitles.SUCCESS.name(), "User data matches!");
+        return ResponseEntity.ok(new ResponseData<>(true, "User data matches!" , null));
     }
 
     @PutMapping("/registration")
-    public MessageResponseData registration(@RequestBody UserRegistrationCredentialsData data) {
+    public ResponseEntity<ResponseData<Object>> registration(@RequestBody UserRegistrationCredentialsData data) {
         if (credentialsService.checkUserExists(data.getUserName(), false)) {
-            return new MessageResponseData(MessageTitles.ERROR.name(), "Account with this login already exists!");
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(
+                            new ResponseData<>(false, "Account with this login already exists!", null)
+                    );
         }
 
         if (credentialsService.checkUserExists(data.getMail(), true)) {
-            return new MessageResponseData(MessageTitles.ERROR.name(), "Account with this mail already exists!");
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(
+                            new ResponseData<>(false, "Account with this mail already exists!", null)
+                    );
         }
 
         credentialsService.addCredentials(data.getUserName(), data.getMail(), data.getPassword());
 
-        return new MessageResponseData(MessageTitles.SUCCESS.name(), "User data matches!");
+        return ResponseEntity.ok(new ResponseData<>(true, "User data matches!" , null));
     }
 }
