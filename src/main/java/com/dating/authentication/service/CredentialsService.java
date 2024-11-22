@@ -1,5 +1,8 @@
 package com.dating.authentication.service;
 
+import com.dating.authentication.data.ResponseData;
+import com.dating.authentication.data.UserRegistrationCredentialsData;
+import com.dating.authentication.data.UserSingInCredentialsData;
 import com.dating.authentication.model.UserCredentialsModel;
 import com.dating.authentication.repository.UserCredentialsRepository;
 import lombok.AllArgsConstructor;
@@ -12,35 +15,48 @@ public class CredentialsService {
     private UserCredentialsRepository credentialsRepository;
     private PasswordEncoder passwordEncoder;
 
-    public boolean checkUserExists(String login, boolean isMail) {
-        if (isMail) return credentialsRepository.existsByUserMail(login);
+    private boolean checkUserExists(String login) {
+        if (login.contains("@")) return credentialsRepository.existsByUserMail(login);
 
         return credentialsRepository.existsByUserName(login);
     }
 
-    public boolean validateCredentials(String login, String password, boolean isMail) {
+    public ResponseData<Void> validateCredentials(UserSingInCredentialsData data) {
         UserCredentialsModel credentials;
-
-        if (isMail) {
-            credentials = credentialsRepository.getByUserMail(login);
+        if (checkUserExists(data.getLogin())) {
+            credentials = credentialsRepository.getByUserMail(data.getLogin());
         } else {
-            credentials = credentialsRepository.getByUserName(login);
+            credentials = credentialsRepository.getByUserName(data.getLogin());
         }
 
-        return passwordEncoder.matches(password, credentials.getUserPassword());
+        if (credentials == null) {
+            return new ResponseData<>(false, "There is no user with this login!", null);
+        }
+
+        if (passwordEncoder.matches(data.getPassword(), credentials.getUserPassword())) {
+            return new ResponseData<>(true, "User data matches!", null);
+        } else {
+            return new ResponseData<>(true, "User data not matches!", null);
+        }
     }
 
-    public boolean addCredentials(String userName, String mail, String password) {
-        if (checkUserExists(userName, false)) return false;
+    public ResponseData<Void> addCredentials(UserRegistrationCredentialsData data) {
+        if (checkUserExists(data.getUserName())) {
+            return new ResponseData<>(false, "Account with this login already exists!", null);
+        }
+
+        if (checkUserExists(data.getMail())) {
+            return new ResponseData<>(false, "Account with this mail already exists!", null);
+        }
 
         UserCredentialsModel credentialsModel = new UserCredentialsModel();
 
-        credentialsModel.setUserName(userName);
-        credentialsModel.setUserMail(mail);
-        credentialsModel.setUserPassword(passwordEncoder.encode(password));
+        credentialsModel.setUserName(data.getUserName());
+        credentialsModel.setUserMail(data.getMail());
+        credentialsModel.setUserPassword(passwordEncoder.encode(data.getPassword()));
 
         credentialsRepository.save(credentialsModel);
 
-        return true;
+        return new ResponseData<>(true, "registration was successful!", null);
     }
 }
