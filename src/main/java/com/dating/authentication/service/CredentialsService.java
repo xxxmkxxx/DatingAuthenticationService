@@ -22,18 +22,15 @@ public class CredentialsService {
     }
 
     public ResponseData<Void> validateCredentials(UserSingInCredentialsData data) {
-        UserCredentialsModel credentials;
-        if (checkUserExists(data.getLogin())) {
-            credentials = credentialsRepository.getByUserMail(data.getLogin());
-        } else {
-            credentials = credentialsRepository.getByUserName(data.getLogin());
-        }
-
-        if (credentials == null) {
+        if (!checkUserExists(data.getLogin())) {
             return new ResponseData<>(false, "There is no user with this login!", null);
         }
 
-        if (passwordEncoder.matches(data.getPassword(), credentials.getUserPassword())) {
+        UserCredentialsModel userCredentials = data.getLogin().contains("@") ?
+                credentialsRepository.getByUserMail(data.getLogin()) :
+                credentialsRepository.getByUserName(data.getLogin());
+
+        if (passwordEncoder.matches(data.getPassword(), userCredentials.getUserPassword())) {
             return new ResponseData<>(true, "User data matches!", null);
         } else {
             return new ResponseData<>(true, "User data not matches!", null);
